@@ -1,0 +1,29 @@
+export interface Student {
+  id: number;
+  name: string;
+  category: string;
+  grade: number;
+  rank?: number;
+}
+
+export interface ContestStats {
+  totalStudents: number;
+  categories: string[];
+  averageGrade: number;
+  topGrade: number;
+}
+
+export interface RegisteredStudent {
+  id: string;
+  name: string;
+  category: string;
+  teacher: string;
+}
+
+export interface Reciter {
+  id: string;
+  name: string;
+  category: string;
+  teacher: string;
+  created_at: string;
+}
