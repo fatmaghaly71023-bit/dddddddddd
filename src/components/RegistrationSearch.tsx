@@ -12,25 +12,24 @@ export const RegistrationSearch: React.FC<RegistrationSearchProps> = ({ isDarkMo
   const [searchResult, setSearchResult] = useState<Reciter | null>(null);
   const [searchAttempted, setSearchAttempted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [reciters, setReciters] = useState<Reciter[]>([]);
+  const [totalStudents, setTotalStudents] = useState(0);
 
   useEffect(() => {
-    fetchReciters();
+    fetchTotalStudents();
   }, []);
 
-  const fetchReciters = async () => {
+  const fetchTotalStudents = async () => {
     try {
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('reciters')
-        .select('id, name, category, teacher, created_at')
-        .order('name');
+        .select('*', { count: 'exact', head: true });
 
       if (error) {
-        console.error('Error fetching reciters:', error);
+        console.error('Error fetching total students:', error);
         return;
       }
 
-      setReciters(data || []);
+      setTotalStudents(count || 0);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -47,11 +46,19 @@ export const RegistrationSearch: React.FC<RegistrationSearchProps> = ({ isDarkMo
     setSearchAttempted(true);
 
     try {
-      const reciter = reciters.find(r => 
-        r.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
-      );
+      const { data, error } = await supabase
+        .from('reciters')
+        .select('*')
+        .ilike('name', `%${searchTerm.trim()}%`)
+        .limit(1)
+        .single();
 
-      setSearchResult(reciter || null);
+      if (error && error.code !== 'PGRST116') {
+        console.error('Search error:', error);
+        setSearchResult(null);
+      } else {
+        setSearchResult(data || null);
+      }
     } catch (error) {
       console.error('Search error:', error);
       setSearchResult(null);
@@ -117,7 +124,7 @@ export const RegistrationSearch: React.FC<RegistrationSearchProps> = ({ isDarkMo
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="ادخل اسم الطالب للبحث..."
+                    placeholder="ادخل اسم طالب القرآن للبحث..."
                     className={`flex-1 px-6 py-4 text-right focus:outline-none text-lg transition-colors duration-300 ${
                       isDarkMode 
                         ? 'bg-gray-800 text-gray-100 placeholder-gray-400' 
@@ -188,7 +195,7 @@ export const RegistrationSearch: React.FC<RegistrationSearchProps> = ({ isDarkMo
                             <div className="flex items-center gap-3">
                               <User className={`w-6 h-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                               <div>
-                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>اسم الطالب</p>
+                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>اسم طالب القرآن</p>
                                 <p className={`text-xl font-bold ${isDarkMode ? 'text-green-200' : 'text-green-800'}`}>
                                   {searchResult.name}
                                 </p>
@@ -198,7 +205,7 @@ export const RegistrationSearch: React.FC<RegistrationSearchProps> = ({ isDarkMo
                             <div className="flex items-center gap-3">
                               <GraduationCap className={`w-6 h-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                               <div>
-                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>المحفظ</p>
+                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>الشيخ / المحفظ</p>
                                 <p className={`text-lg font-semibold ${isDarkMode ? 'text-green-200' : 'text-green-700'}`}>
                                   {searchResult.teacher || 'غير محدد'}
                                 </p>
@@ -220,9 +227,9 @@ export const RegistrationSearch: React.FC<RegistrationSearchProps> = ({ isDarkMo
                             <div className="flex items-center gap-3">
                               <Clock className={`w-6 h-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                               <div>
-                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>تاريخ التسجيل</p>
+                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>رقم الطالب</p>
                                 <p className={`text-lg font-semibold ${isDarkMode ? 'text-green-200' : 'text-green-700'}`}>
-                                  {formatDate(searchResult.created_at)}
+                                  {searchResult.id}
                                 </p>
                               </div>
                             </div>
@@ -288,10 +295,10 @@ export const RegistrationSearch: React.FC<RegistrationSearchProps> = ({ isDarkMo
                           : 'bg-white/70 border-red-200'
                       }`}>
                         <p className={`text-xl md:text-2xl leading-relaxed mb-4 ${isDarkMode ? 'text-red-200' : 'text-red-700'}`}>
-                          يرجى التسجيل أولاً مع المحفظ أو إدارة المسابقة
+                          يرجى التسجيل أولاً مع الشيخ أو المحفظ أو إدارة المسابقة
                         </p>
                         <p className={`text-lg ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
-                          للتسجيل، يرجى التواصل مع أحد المحفظين المعتمدين أو إدارة دار المناسبات الشرقيه
+                          للتسجيل، يرجى التواصل مع أحد الشيوخ أو المحفظين المعتمدين أو إدارة دار المناسبات الشرقيه
                         </p>
                       </div>
                       
@@ -302,8 +309,8 @@ export const RegistrationSearch: React.FC<RegistrationSearchProps> = ({ isDarkMo
                             : 'bg-gradient-to-r from-blue-100 to-blue-200 border-blue-200'
                         }`}>
                           <UserCheck className={`w-8 h-8 mx-auto mb-2 animate-bounce-slow ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                          <h4 className={`font-bold mb-1 ${isDarkMode ? 'text-blue-200' : 'text-blue-800'}`}>التسجيل مع المحفظ</h4>
-                          <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>تواصل مع محفظك المعتمد</p>
+                          <h4 className={`font-bold mb-1 ${isDarkMode ? 'text-blue-200' : 'text-blue-800'}`}>التسجيل مع الشيخ/المحفظ</h4>
+                          <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>تواصل مع شيخك أو محفظك المعتمد</p>
                         </div>
                         
                         <div className={`p-4 rounded-xl border transition-colors duration-300 ${
@@ -336,7 +343,7 @@ export const RegistrationSearch: React.FC<RegistrationSearchProps> = ({ isDarkMo
               </h3>
             </div>
             <p className={`text-lg ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>
-              إجمالي القراء المسجلين: <span className="font-bold text-2xl">{reciters.length}</span> قارئ
+              إجمالي طلاب القرآن المسجلين: <span className="font-bold text-2xl">{totalStudents}</span> طالب
             </p>
           </div>
         </div>

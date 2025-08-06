@@ -64,27 +64,24 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ isDarkMode =
   const [searchResult, setSearchResult] = useState<Reciter | null>(null);
   const [searchAttempted, setSearchAttempted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [reciters, setReciters] = useState<Reciter[]>([]);
-  const [totalReciters, setTotalReciters] = useState(0);
+  const [totalStudents, setTotalStudents] = useState(0);
 
   useEffect(() => {
-    fetchReciters();
+    fetchTotalStudents();
   }, []);
 
-  const fetchReciters = async () => {
+  const fetchTotalStudents = async () => {
     try {
-      const { data, error, count } = await supabase
+      const { count, error } = await supabase
         .from('reciters')
-        .select('id, name, category, teacher, created_at', { count: 'exact' })
-        .order('name');
+        .select('*', { count: 'exact', head: true });
 
       if (error) {
-        console.error('Error fetching reciters:', error);
+        console.error('Error fetching total students:', error);
         return;
       }
 
-      setReciters(data || []);
-      setTotalReciters(count || 0);
+      setTotalStudents(count || 0);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -101,11 +98,19 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ isDarkMode =
     setSearchAttempted(true);
 
     try {
-      const reciter = reciters.find(r => 
-        r.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
-      );
+      const { data, error } = await supabase
+        .from('reciters')
+        .select('*')
+        .ilike('name', `%${searchTerm.trim()}%`)
+        .limit(1)
+        .single();
 
-      setSearchResult(reciter || null);
+      if (error && error.code !== 'PGRST116') {
+        console.error('Search error:', error);
+        setSearchResult(null);
+      } else {
+        setSearchResult(data || null);
+      }
     } catch (error) {
       console.error('Search error:', error);
       setSearchResult(null);
@@ -175,7 +180,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ isDarkMode =
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="ادخل اسم الطالب للبحث..."
+                    placeholder="ادخل اسم طالب القرآن للبحث..."
                     className={`flex-1 px-6 py-4 text-right focus:outline-none text-lg transition-colors duration-300 ${
                       isDarkMode 
                         ? 'bg-gray-800 text-gray-100 placeholder-gray-400' 
@@ -246,7 +251,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ isDarkMode =
                             <div className="flex items-center gap-3">
                               <User className={`w-6 h-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                               <div>
-                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>اسم الطالب</p>
+                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>اسم طالب القرآن</p>
                                 <p className={`text-xl font-bold ${isDarkMode ? 'text-green-200' : 'text-green-800'}`}>
                                   {searchResult.name}
                                 </p>
@@ -256,7 +261,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ isDarkMode =
                             <div className="flex items-center gap-3">
                               <GraduationCap className={`w-6 h-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                               <div>
-                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>المحفظ</p>
+                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>الشيخ / المحفظ</p>
                                 <p className={`text-lg font-semibold ${isDarkMode ? 'text-green-200' : 'text-green-700'}`}>
                                   {searchResult.teacher || 'غير محدد'}
                                 </p>
@@ -278,9 +283,9 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ isDarkMode =
                             <div className="flex items-center gap-3">
                               <Clock className={`w-6 h-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                               <div>
-                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>تاريخ التسجيل</p>
+                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>رقم الطالب</p>
                                 <p className={`text-lg font-semibold ${isDarkMode ? 'text-green-200' : 'text-green-700'}`}>
-                                  {formatDate(searchResult.created_at)}
+                                  {searchResult.id}
                                 </p>
                               </div>
                             </div>
@@ -404,10 +409,10 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ isDarkMode =
                           : 'bg-white/70 border-red-200'
                       }`}>
                         <p className={`text-xl md:text-2xl leading-relaxed mb-4 ${isDarkMode ? 'text-red-200' : 'text-red-700'}`}>
-                          يرجى التسجيل أولاً مع المحفظ أو إدارة المسابقة
+                          يرجى التسجيل أولاً مع الشيخ أو المحفظ أو إدارة المسابقة
                         </p>
                         <p className={`text-lg ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
-                          للتسجيل، يرجى التواصل مع أحد المحفظين المعتمدين أو إدارة دار المناسبات الشرقيه
+                          للتسجيل، يرجى التواصل مع أحد الشيوخ أو المحفظين المعتمدين أو إدارة دار المناسبات الشرقيه
                         </p>
                       </div>
                       
@@ -418,8 +423,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ isDarkMode =
                             : 'bg-gradient-to-r from-blue-100 to-blue-200 border-blue-200'
                         }`}>
                           <UserCheck className={`w-8 h-8 mx-auto mb-2 animate-bounce-slow ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                          <h4 className={`font-bold mb-1 ${isDarkMode ? 'text-blue-200' : 'text-blue-800'}`}>التسجيل مع المحفظ</h4>
-                          <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>تواصل مع محفظك المعتمد</p>
+                          <h4 className={`font-bold mb-1 ${isDarkMode ? 'text-blue-200' : 'text-blue-800'}`}>التسجيل مع الشيخ/المحفظ</h4>
+                          <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>تواصل مع شيخك أو محفظك المعتمد</p>
                         </div>
                         
                         <div className={`p-4 rounded-xl border transition-colors duration-300 ${
@@ -458,9 +463,9 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ isDarkMode =
                   : 'bg-white/70 border-purple-200'
               }`}>
                 <div className={`text-4xl font-bold mb-2 ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>
-                  {totalReciters}
+                  {totalStudents}
                 </div>
-                <p className={`${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>إجمالي المسجلين</p>
+                <p className={`${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>إجمالي طلاب القرآن المسجلين</p>
               </div>
               
               <div className={`p-6 rounded-2xl border transition-colors duration-300 ${
@@ -484,6 +489,53 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ isDarkMode =
                 </div>
                 <p className={`${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>أيام اختبارات</p>
               </div>
+            </div>
+          </div>
+
+          {/* Exam Schedule Table */}
+          <div className={`mt-8 rounded-3xl shadow-2xl overflow-hidden transition-colors duration-300 ${
+            isDarkMode ? 'bg-gray-700' : 'bg-white'
+          }`}>
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+              <h3 className="text-2xl font-bold text-center flex items-center justify-center gap-3">
+                <Calendar className="w-8 h-8 animate-bounce-slow" />
+                جدول مواعيد الاختبارات حسب الفئة
+              </h3>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className={`${isDarkMode ? 'bg-gray-600' : 'bg-gray-50'}`}>
+                  <tr>
+                    <th className={`px-6 py-4 text-center font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>الفئة</th>
+                    <th className={`px-6 py-4 text-center font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>التاريخ الميلادي</th>
+                    <th className={`px-6 py-4 text-center font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>التاريخ الهجري</th>
+                    <th className={`px-6 py-4 text-center font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>الوقت</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(examSchedule).map(([category, schedule], index) => (
+                    <tr key={category} className={`border-b transition-colors ${
+                      isDarkMode 
+                        ? 'border-gray-600 hover:bg-gray-600' 
+                        : 'border-gray-200 hover:bg-gray-50'
+                    }`}>
+                      <td className={`px-6 py-4 text-center font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                        {category}
+                      </td>
+                      <td className={`px-6 py-4 text-center ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {schedule.date}
+                      </td>
+                      <td className={`px-6 py-4 text-center ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {schedule.hijriDate}
+                      </td>
+                      <td className={`px-6 py-4 text-center font-semibold ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                        {schedule.time}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 

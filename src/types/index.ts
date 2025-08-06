@@ -21,9 +21,8 @@ export interface RegisteredStudent {
 }
 
 export interface Reciter {
-  id: string;
+  id: number;
   name: string;
   category: string;
   teacher: string;
-  created_at: string;
 }
